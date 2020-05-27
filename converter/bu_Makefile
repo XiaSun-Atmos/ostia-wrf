@@ -1,0 +1,32 @@
+#
+.SUFFIXES: .o .f90 .mod
+
+# .o-Files des Gesamtprogrammes 
+OBJECTS = interpOSTIA.o decodeOSTIA.o
+PROGRAMS = interpOSTIA decodeOSTIA
+
+#MODULES="netCDF-Fortran/4.4.4-intel-2016b; HDF5/1.8.17-intel-2016b; ifort/2016.3.210"
+
+#FC = gfortran
+FC=ifort
+DEBUG = -g
+FFLAGS = -xhost -assume byterecl
+LFLAGS = 
+LIBS = -lnetcdff -lnetcdf -lhdf5_hl -lhdf5 -lz -lm
+
+# Inferenzregeln
+.f90.o: $(OBJECTS)
+	$(FC) $(DEBUG) $(FFLAGS) -c $<
+
+default : interpOSTIA.o decodeOSTIA.o
+
+interpOSTIA : interpOSTIA.o geth_newdate.o nfeb.o
+	$(FC) $(LFLAGS) $@.o $(LIBS) -o interpOSTIA.o geth_newdate.o nfeb.o $@
+
+decodeOSTIA : decodeOSTIA.o
+	$(FC) $(LFLAGS) $@.o $(LIBS) -o $@
+
+clean:
+	@rm -f *.o *.mod
+
+
