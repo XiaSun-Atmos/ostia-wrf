@@ -12,7 +12,7 @@ Scripts for download and conversion of OSTIA data to wrf intermediate format
 
 ./get_ostia.sh 2017-01-01 2017-01-02
 
-## 3. Developers: 
+#### Developers: 
     Susumu Shimada -  AIST, Koriyama, Japan
     Martin Dörenkämper - Fraunhofer IWES, Oldenburg, Germany
     Gerald Steinfeld - ForWind University of Oldenburg, Oldenburg, Germany
