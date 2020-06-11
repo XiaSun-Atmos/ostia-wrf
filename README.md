@@ -14,8 +14,8 @@ from daily to six hourly files to work with the typical reanalysis data.
 ### 2. Compilation and Adaptation to local system
 
 Needed libraries/software:
-	`-netcdf`
-	`-gfortran/ifort`
+* netcdf 
+* gfortran/ifort`
 	
 To compile change location of netcdf library
 and header files in Makefile
