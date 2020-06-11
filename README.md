@@ -14,20 +14,20 @@ from daily to six hourly files to work with the typical reanalysis data.
 ### 2. Compilation and Adaptation to local system
 
 Needed libraries/software:
-	-netcdf 
-	-gfortran/ifort
+	`-netcdf`
+	`-gfortran/ifort`
 	
 To compile change location of netcdf library
 and header files in Makefile
 
 and run: 
-	Make all
+	`Make all`
 
 ### 3. Usage Example
 
-Fill in USERNAME and PASSWORT variables in python script. 
+Fill in `USERNAME` and `PASSWORD` variables in python script. 
 
-python3 get_ostia_all.py 2017-01-01 2017-01-02
+`python3 get_ostia_all.py 2017-01-01 2017-01-02`
 
 Note that the converter needs the data from the day before to
 interpolate to the desired six-hourly files. Thus, you might
