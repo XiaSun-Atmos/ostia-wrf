@@ -1,9 +1,9 @@
-NETCDF = /cm/shared/uniol/software/netCDF-Fortran/4.4.4-intel-2016b
-FC = ifort
-FFLAGS = -I$(NETCDF)/include -convert big_endian
-FFLAGS2 = -I$(NETCDF)/include -convert big_endian
-LDFLAGS2 = -L$(NETCDF)/lib -lnetcdf -lnetcdff 
-LDFLAGS = -L$(NETCDF)/lib -lnetcdf -lnetcdff 
+NETCDF = /usr
+FC = gfortran
+FFLAGS = -I/usr/include -fconvert=big-endian
+FFLAGS2 = -I/usr/include -fconvert=big-endian
+LDFLAGS2 = -L/usr/lib/x86_64-linux-gnu -lnetcdf -lnetcdff
+LDFLAGS = -L/usr/lib/x86_64-linux-gnu -lnetcdf -lnetcdff
 
 objects = decodeOSTIA.o interpOSTIA.o get_vars.o
 
@@ -15,11 +15,9 @@ all: $(PROGRAMS)
 
 interpOSTIA: interpOSTIA.o get_vars.o geth_newdate.o nfeb.o
 	$(FC) -o $@ interpOSTIA.o get_vars.o geth_newdate.o nfeb.o ${LDFLAGS2}
-#	mv interpOSTIA /home/${USER}/bin
 
 decodeOSTIA: decodeOSTIA.o get_vars.o geth_newdate.o nfeb.o
 	$(FC) -o $@ decodeOSTIA.o get_vars.o geth_newdate.o nfeb.o ${LDFLAGS2}
-#	mv decodeOSTIA /home/${USER}/bin
 
 %.o : %.f90
 	$(FC) ${FFLAGS} -c $<
