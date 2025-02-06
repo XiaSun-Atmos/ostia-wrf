@@ -5,12 +5,13 @@ program interpOSTIA
   implicit none
   character (len=132) :: File1, File2, met_out_filename
   character (len=24) :: hdate,hdate1,hdate2 ! Valid date for data YYYY:MM:DD_HH:00:00
+  integer :: time_array(1)
   integer :: indx,iargc,version
   integer :: ounit, io_status, istatus
   logical :: exists, is_used
   integer :: i,j,m,n,l,k,idt
   integer :: status,ncid1,ncid2,varID
-  integer :: nlat, nlon, iproj, nn=4
+  integer :: nlat, nlon, iproj, nn=24 ! change time frequency, 4 for every 6 hours
   real :: var
   integer :: time(1)
   real, dimension(:)    ,allocatable :: xlat, xlon
@@ -64,10 +65,10 @@ program interpOSTIA
      stop
   endif
 
-  call get_var0(ncid1,"LEN","lon",var,status)
+  call get_var0(ncid1,"LEN","longitude",var,status)
   call handle_err(status)
   nlon = int(var)
-  call get_var0(ncid1,"LEN","lat",var,status)
+  call get_var0(ncid1,"LEN","latitude",var,status)
   call handle_err(status)
   nlat = int(var)
   !!print *, nlat, nlon
@@ -76,9 +77,9 @@ program interpOSTIA
   allocate (sst(nlon,nlat),sst1(nlon,nlat),sst2(nlon,nlat))
   allocate (ice(nlon,nlat),ice1(nlon,nlat),ice2(nlon,nlat))
 
-  call get_var1( ncid1,"lon",  xlon,1,nlon,status)
+  call get_var1( ncid1,"longitude",  xlon,1,nlon,status)
   call handle_err(status)
-  call get_var1( ncid1,"lat",  xlat,1,nlat,status)
+  call get_var1( ncid1,"latitude",  xlat,1,nlat,status)
   call handle_err(status)
 
 ! Cannot use get_var0 here because time is an integer
@@ -89,6 +90,8 @@ program interpOSTIA
 
   hdate = "1981-01-01_00:00:00"
   call geth_newdate (hdate1(1:16), hdate(1:16), time)
+  print *, shape(hdate)
+  print *, shape(hdate1)
   hdate1 = hdate1(1:16)//":00"
   print *,hdate1
 
@@ -175,7 +178,8 @@ program interpOSTIA
   do n=1,nn
 
 ! Figure dates in between
-     call geth_newdate (hdate(1:13), hdate1(1:13), (n-1)*idt)
+     time_array(1) = (n-1)*idt
+     call geth_newdate (hdate(1:13), hdate1(1:13), time_array)
      print *,hdate(1:13)
 
 ! What is the filename
