@@ -52,19 +52,19 @@ program decodeOSTIA
      stop
   endif
 
-  call get_var0(ncid,"LEN","lon",var,status)
+  call get_var0(ncid,"LEN","longitude",var,status)
   call handle_err(status)
   nlon = int(var)
-  call get_var0(ncid,"LEN","lat",var,status)
+  call get_var0(ncid,"LEN","latitude",var,status)
   call handle_err(status)
   nlat = int(var)
   print *, nlat, nlon
   allocate (xlat(nlat), xlon(nlon))
   allocate (x(nlon,nlat), mask(nlon,nlat), sst(nlon,nlat))
 
-  call get_var1( ncid,"lon",  xlon,1,nlon,status)
+  call get_var1( ncid,"longitude",  xlon,1,nlon,status)
   call handle_err(status)
-  call get_var1( ncid,"lat",  xlat,1,nlat,status)
+  call get_var1( ncid,"latitude",  xlat,1,nlat,status)
   call handle_err(status)
 
 ! Cannot use get_var0 here because time is an integer
@@ -113,14 +113,14 @@ program decodeOSTIA
   ! write(unit=ounit) is_wind_grid_rel
   ! print *,"Write: "//desc
 
-  ! field = 'mask    '
-  ! status = nf90_inq_varid(ncid,TRIM(field), VarId)
-  ! if (status == 0) then
-  !    status = nf90_get_var(ncid, VarId,mask,start=(/1,1,1/),count=(/nlon,nlat,1/))
-  ! end if
-  ! x = real(mask)
-  ! print *,trim(field),minval(x),maxval(x)
-  ! write(unit=ounit) x
+  field = 'mask    '
+  status = nf90_inq_varid(ncid,TRIM(field), VarId)
+  if (status == 0) then
+     status = nf90_get_var(ncid, VarId,mask,start=(/1,1,1/),count=(/nlon,nlat,1/))
+  end if
+  x= real(mask)
+  print *,trim(field),minval(x),maxval(x)
+  write(unit=ounit) x
 
   ! Write sea-ice-fraction
   field = "SEAICE   "

@@ -10,9 +10,10 @@ subroutine geth_newdate (ndate, odate, idt)
 !  on exit      -  ndate  -  the new hdate.
 
   integer, intent(in)           :: idt
+  ! character (len=*), intent(out) :: ndate
+  ! character (len=*), intent(in)  :: odate
   character (len=*), intent(out) :: ndate
   character (len=*), intent(in)  :: odate
-
 
 !  Local Variables
 

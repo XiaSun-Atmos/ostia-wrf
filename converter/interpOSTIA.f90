@@ -15,7 +15,7 @@ program interpOSTIA
   real :: var
   integer :: time(1)
   real, dimension(:)    ,allocatable :: xlat, xlon
-  real, dimension(:,:)  ,allocatable :: sst, sst1, sst2, ice, ice1, ice2
+  real, dimension(:,:)  ,allocatable :: sst, sst1, sst2, ice, ice1, ice2, mask_real,x
   real :: add_offset, scale_factor, fill_value, missing_value = -1.e+30
   integer*1, dimension(:,:)  ,allocatable :: mask
   integer*4, dimension(:,:)  ,allocatable :: var2d
@@ -121,14 +121,22 @@ program interpOSTIA
   ! write(unit=ounit) is_wind_grid_rel
   ! print *,"Write: "//desc
 
-  ! field = 'mask    '
-  ! status = nf90_inq_varid(ncid,TRIM(field), VarId)
-  ! if (status == 0) then
-  !    status = nf90_get_var(ncid, VarId,mask,start=(/1,1,1/),count=(/nlon,nlat,1/))
-  ! end if
-  ! x = real(mask)
-  ! print *,trim(field),minval(x),maxval(x)
+  field = 'mask'
+  status = nf90_inq_varid(ncid1,TRIM(field), VarId)
+  if (status == 0) then
+     status = nf90_get_var(ncid1, VarId,mask,start=(/1,1,1/),count=(/nlon,nlat,1/))
+  end if
+  x = real(mask)
+  print *,trim(field),minval(x),maxval(x)
   ! write(unit=ounit) x
+
+  ! Read mask data
+  ! field_netcdf = 'mask'  ! or your mask variable name
+  ! status = nf90_inq_varid(ncid1,TRIM(field_netcdf), VarID)
+  ! call handle_err(status)
+  ! mask_real = real(mask)
+  ! print *,trim(field_netcdf),minval(mask),maxval(mask)
+  ! write(unit=ounit) mask
 
   field_netcdf = 'sea_ice_fraction'
   status = nf90_inq_varid(ncid1,TRIM(field_netcdf), VarID)
@@ -240,6 +248,47 @@ program interpOSTIA
      print *,"Write: "//desc
      write(unit=ounit) ice
 
+! Write land sea mask
+
+
+     field = "SST_MASK"
+     units = "         "
+     desc = "Land Sea mask"
+     write(unit=ounit) version
+     write(unit=ounit) hdate, xfcst, map_source, field, &
+          units, desc, xlvl, nlon, nlat, iproj
+     write(unit=ounit) startloc, startlat, startlon, &
+          deltalat, deltalon, earth_radius
+     write(unit=ounit) is_wind_grid_rel
+
+
+     field_netcdf = 'mask'
+     status = nf90_inq_varid(ncid1,TRIM(field_netcdf), VarId)
+     if (status == 0) then
+        status = nf90_get_var(ncid1, VarId,mask,start=(/1,1,1/),count=(/nlon,nlat,1/))
+     end if
+
+
+     mask_real=real(mask)
+     print *,"before interp",minval(mask_real),maxval(mask_real)
+     call interp(nlon,nlat,mask_real,mask_real,nn,n,mask_real)
+     
+     where(mask_real == 1.)
+        mask_real = 0.
+     end where
+
+     where(mask_real == 2.)
+        mask_real = 1.
+     end where
+
+     where(mask_real > 2.)
+        mask_real = 0.
+     end where
+
+     print *,"Write: "//desc
+     print *,trim(field),minval(mask_real),maxval(mask_real)
+     write(unit=ounit) mask_real
+     
      close(ounit)
   end do
 

@@ -1,9 +1,9 @@
-NETCDF = /usr
+NETCDF = /usr/local
 FC = gfortran
-FFLAGS = -I/usr/include -fconvert=big-endian
-FFLAGS2 = -I/usr/include -fconvert=big-endian
-LDFLAGS2 = -L/usr/lib/x86_64-linux-gnu -lnetcdf -lnetcdff
-LDFLAGS = -L/usr/lib/x86_64-linux-gnu -lnetcdf -lnetcdff
+FFLAGS = -I$(NETCDF)/include -fconvert=big-endian
+FFLAGS2 = -I$(NETCDF)/include -fconvert=big-endian
+LDFLAGS = -L$(NETCDF)/lib -lnetcdf -lnetcdff
+LDFLAGS2 = -L$(NETCDF)/lib -lnetcdf -lnetcdff
 
 objects = decodeOSTIA.o interpOSTIA.o get_vars.o
 
