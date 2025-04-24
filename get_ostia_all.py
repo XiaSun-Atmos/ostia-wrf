@@ -30,15 +30,92 @@ import glob
 import subprocess
 import datetime
 import calendar
-
+import copernicusmarine
+import pexpect
+import sys
+# from datetime import datetime,timedelta
+import shutil
+import glob
 # Enter username and passwort for OSTIA data download
-USERNAME=" "
-PASSWORD=" "
+username="xia.sun@noaa.gov"
+password="_@mvV*DYw4iGjky"
 
 CONVERTER="./converter/interpOSTIA"
 MPATH="./motu-client-python/motu-client.py"
-PPATH="/usr/bin/python"
+PPATH="/Library/Frameworks/Python.framework/Versions/3.10/bin/python3"
 RMHOST="http://nrt.cmems-du.eu/motu-web/Motu" #"http://cmems.isac.cnr.it/motu-web/Motu" #mis-gateway-servlet/Motu
+
+def get_date_range(sdate, edate):
+    """Generate list of dates between start and end date"""
+    start_date = sdate
+    end_date = edate
+    
+    date_list = []
+    current_date = start_date
+    
+    while current_date <= end_date:
+        date_list.append(current_date.strftime('%Y-%m-%d'))
+        current_date += datetime.timedelta(days=1)
+    
+    return date_list
+
+def run_copernicus_download(username, password, target_date,sdate,dpath):
+    """Download data for a single date"""
+    datetime_str = f"{target_date}"
+    target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d")  # Convert string to datetime
+    tmin = target_date.strftime("%Y-%m-%d %H:00:00")
+    ts=target_date+datetime.timedelta(days=1)
+    tmax=ts.strftime("%Y-%m-%d %H:00:00")
+    opath=dpath+"orig_all/"+sdate.strftime("%Y")+"/"+target_date.strftime("%Y%m")
+    if not os.path.exists(opath):
+        os.makedirs(opath)
+    ofile="ostia_all."+target_date.strftime("%Y%m%d")+".nc"
+    # Pattern to match the downloaded file
+    pattern = f"METOFFICE-GLO-SST-L4-NRT-OBS-SST-V2*{datetime_str}*.nc"
+
+    command = f'''python3 -c "import copernicusmarine; copernicusmarine.subset(
+        dataset_id='METOFFICE-GLO-SST-L4-NRT-OBS-SST-V2',
+        variables=['analysed_sst', 'analysis_error', 'mask', 'sea_ice_fraction'],
+        minimum_longitude=-90.78718035960358,
+        maximum_longitude=-49.83475443037671,
+        minimum_latitude=20.649234170676596,
+        maximum_latitude=54.776255778365666,
+        start_datetime='{datetime_str}T00:00:00',
+        end_datetime='{datetime_str}T00:00:00')"'''
+
+
+    try:
+        child = pexpect.spawn(command)
+        
+        child.expect('Copernicus Marine username: ')
+        child.sendline(username)
+        
+        child.expect('Copernicus Marine password: ')
+        child.sendline(password)
+        
+        child.expect(pexpect.EOF)
+        
+        print(f"Successfully downloaded data for {target_date}")
+        print(pattern)
+
+        downloaded_files = glob.glob(pattern)
+        print(downloaded_files)
+        downloaded_file = downloaded_files[0]  # Take the first matching file
+        shutil.move(downloaded_file, os.path.join(opath, ofile))
+
+        return True
+        
+    except Exception as e:
+        print(f"Error downloading data for {target_date}: {str(e)}")
+        return False
+
+def validate_date(date_str):
+    """Validate date format"""
+    try:
+        datetime.datetime.strptime(date_str, '%Y-%m-%d')
+        return True
+    except ValueError:
+        return False
 
 def downdat(dpath,adate):
     """
@@ -96,7 +173,11 @@ def convfiles(sdate,edate):
         flist=glob.glob("./orig_all/*/*/ostia_all*.nc")
         date1=adate-datetime.timedelta(days=1)
         date2=adate
+        print (flist)
         for fl in flist:
+            print (fl)
+            print("ostia_all."+date1.strftime("%Y%m%d")+".nc")
+            print("ostia_all."+date2.strftime("%Y%m%d")+".nc")
             if "ostia_all."+date1.strftime("%Y%m%d")+".nc" in fl:
                 fn1=fl
             if "ostia_all."+date2.strftime("%Y%m%d")+".nc" in fl:
@@ -116,6 +197,7 @@ def convfiles(sdate,edate):
             print("+++++ Done! +++++")
         adate=adate+datetime.timedelta(days=1)
     return(None)
+
 
 def getfiles(sdate,edate,dpath):
     """
@@ -143,9 +225,31 @@ def main():
     edate=datetime.datetime.strptime(sys.argv[2],"%Y-%m-%d")
 
     dpath="./"
+    # Get list of dates to process
+    dates_to_process = get_date_range((sdate- datetime.timedelta(days=1)), edate)
+    total_dates = len(dates_to_process)
+   # Track success/failure
+    successful_downloads = 0
+    failed_downloads = 0
+    
+    # Process each date
+    for i, current_date in enumerate(dates_to_process, 1):
+        print(f"\nProcessing date {i}/{total_dates}: {current_date}")
+        
+        if run_copernicus_download(username, password, current_date,sdate,dpath):
+            successful_downloads += 1
+        else:
+            failed_downloads += 1
+    
+    # Print summary
+    print("\nDownload Summary:")
+    print(f"Total dates processed: {total_dates}")
+    print(f"Successful downloads: {successful_downloads}")
+    print(f"Failed downloads: {failed_downloads}")
+
 
     # Download Data:
-    gstat=getfiles(sdate,edate,dpath)
+    # gstat=getfiles(sdate,edate,dpath)
     # Convert Data to WRF Intermediate Files:
     cstat=convfiles(sdate,edate)
 

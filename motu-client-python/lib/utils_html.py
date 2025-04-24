@@ -26,9 +26,9 @@
 #  along with this library; if not, write to the Free Software Foundation,
 #  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-import HTMLParser
+from html.parser import HTMLParser
 
-class FounderParser(HTMLParser.HTMLParser):
+class FounderParser(HTMLParser):
     """
     Parser witch found the form/action section an return it
     """

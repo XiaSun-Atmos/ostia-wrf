@@ -26,9 +26,9 @@
 #  along with this library; if not, write to the Free Software Foundation,
 #  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-import urllib2
+import urllib.request
 import logging
-
+from urllib.parse import unquote
 # trace level
 TRACE_LEVEL = 1
 
@@ -44,16 +44,16 @@ def log_url(log, message, url, level = logging.DEBUG ):
     level: (optional) the log level to use"""
     
     urls = url.split('?')
-    log.log( level, message + urllib2.unquote(urls[0]) )
+    log.log( level, message + unquote(urls[0]) )
     if len(urls) > 1:
         for a in sorted(urls[1].split('&')):
             param = a.split('=')
             if( len(param) < 2 ):
               param.append('')
-            log.log( level, ' . %s = %s', urllib2.unquote(param[0]), urllib2.unquote(param[1]) )
+            log.log( level, ' . %s = %s', unquote(param[0]), unquote(param[1]) )
 
             
-class HTTPDebugProcessor(urllib2.BaseHandler):
+class HTTPDebugProcessor(urllib.request.BaseHandler):
     """ Track HTTP requests and responses with this custom handler.
     """
     def __init__(self, log, log_level=TRACE_LEVEL):
@@ -61,7 +61,9 @@ class HTTPDebugProcessor(urllib2.BaseHandler):
         self.log = log
 
     def http_request(self, request):
-        host, full_url = request.get_host(), request.get_full_url()
+        host = request.host
+        full_url = request.full_url
+        # host, full_url = request.get_host(), request.get_full_url()
         url_path = full_url[full_url.find(host) + len(host):]
         log_url ( self.log, "Requesting: ", request.get_full_url(), TRACE_LEVEL )
         self.log.log(self.log_level, "%s %s" % (request.get_method(), url_path))

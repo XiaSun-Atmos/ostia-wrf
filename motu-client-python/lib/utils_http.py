@@ -27,13 +27,16 @@
 #  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
 import urllib
-import urllib2
-import httplib
-import cookielib
+# import urllib2
+from urllib.request import HTTPErrorProcessor
+from urllib import request
+from http import cookiejar
+import http.client as httplib
+# import http.cookiejar as cookiejar
 import utils_log
 import logging
 
-class HTTPErrorProcessor(urllib2.HTTPErrorProcessor):
+class HTTPErrorProcessor(HTTPErrorProcessor):
     def https_response(self, request, response):
         # Consider error codes that are not 2xx (201 is an acceptable response)
         code, msg, hdrs = response.code, response.msg, response.info()
@@ -65,56 +68,57 @@ def open_url(url, **kargs):
     data = None
     log = logging.getLogger("utils_http:open_url")
     # common handlers
-    handlers = [urllib2.HTTPCookieProcessor(cookielib.CookieJar()),
-                urllib2.HTTPHandler(),
-                urllib2.HTTPSHandler(),
-                utils_log.HTTPDebugProcessor(log),
-                HTTPErrorProcessor()                    
-               ]
+    handlers = [
+        request.HTTPCookieProcessor(cookiejar.CookieJar()),
+        request.HTTPHandler(),
+        request.HTTPSHandler(),
+        utils_log.HTTPDebugProcessor(log),
+        request.HTTPErrorProcessor()
+    ]
 
     # add handlers for managing proxy credentials if necessary        
-    if kargs.has_key('proxy'):
+    if 'proxy' in kargs:
         # extract protocol            
         #log.log( utils_log.TRACE_LEVEL, ' PROXY. %s',kargs['proxy']['scheme'])
         #log.log( utils_log.TRACE_LEVEL, ' PORT . %s',kargs['proxy']['netloc'])
         #handlers.append( urllib2.ProxyHandler({kargs['proxy']['scheme']:kargs['proxy']['netloc']}) )
-        handlers.append( urllib2.ProxyHandler({'http':kargs['proxy']['netloc'], 'https':kargs['proxy']['netloc']}) )
+        handlers.append( request.ProxyHandler({'http':kargs['proxy']['netloc'], 'https':kargs['proxy']['netloc']}) )
         if kargs['proxy'].has_key('user'):
-            proxy_auth_handler = urllib2.HTTPBasicAuthHandler()
+            proxy_auth_handler = request.HTTPBasicAuthHandler()
             proxy_auth_handler.add_password('realm', kargs['proxy']['user'], 'username', kargs['proxy']['password'])
             handlers.append(proxy_auth_handler)
         del kargs['proxy']
         
-    if kargs.has_key('authentication'):
+    if 'authentication' in kargs:
         # create the password manager
-        password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_mgr = request.HTTPPasswordMgrWithDefaultRealm()
         urlPart = url.partition('?')
         password_mgr.add_password(None, urlPart, kargs['authentication']['user'], kargs['authentication']['password'])
         # add the basic authentication handler
-        handlers.append(urllib2.HTTPBasicAuthHandler(password_mgr))
+        handlers.append(request.HTTPBasicAuthHandler(password_mgr))
         del kargs['authentication']
     
-    if kargs.has_key('data'):
+    if 'data' in kargs:
         data = kargs['data']
         del kargs['data']
     
-    _opener = urllib2.build_opener(*handlers)
+    _opener = request.build_opener(*handlers)
     log.log( utils_log.TRACE_LEVEL, 'list of handlers:' )
     for h in _opener.handlers:
         log.log( utils_log.TRACE_LEVEL, ' . %s',str(h))
 
     # create the request
     if( data != None ):
-        r = urllib2.Request(url, data, **kargs)
+        r = request.Request(url, data, **kargs)
     else:
-        r = urllib2.Request(url, **kargs)
+        r = request.Request(url, **kargs)
   
     # open the url, but let the exception propagates to the caller  
     return _opener.open(r)
 
 def encode(options):    
     opts = []
-    for k, vset in options.dict().iteritems():
+    for k, vset in options.dict().items():
         for v in vset:
            opts.append('%s=%s' % (str(k), str(v).replace('#','%23').replace(' ','%20')))
     return '&'.join(opts)

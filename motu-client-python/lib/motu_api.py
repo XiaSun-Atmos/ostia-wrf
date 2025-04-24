@@ -26,13 +26,14 @@
 #  along with this library; if not, write to the Free Software Foundation,
 #  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-import urlparse # WARNING : The urlparse module is renamed to urllib.parse
+from urllib.parse import urlparse, urljoin, parse_qs, urlunparse, urlencode # WARNING : The urlparse module is renamed to urllib.parse
 import urllib
-import urllib2
+# import urllib2
 import traceback
 import platform
 import sys
-import httplib
+# import httplib
+import http.client
 import os
 import re
 import tempfile
@@ -42,7 +43,7 @@ import shutil
 import zipfile
 import logging
 import logging.config
-import ConfigParser
+import configparser
 import optparse
 import socket
 
@@ -117,13 +118,13 @@ def build_params(_options):
         # date are strings, and they are send to Motu "as is". If not, we convert them into string
         if _options.date_min is not None or _options.date_min != None:            
             date_min = _options.date_min
-            if not isinstance(date_min, basestring):
+            if not isinstance(date_min, str):
                date_min = date_min.strftime(DATETIME_FORMAT)
             query_options.insert( t_lo = date_min )
             
         if _options.date_max is not None or _options.date_max != None:            
             date_max = _options.date_max
-            if not isinstance(date_max, basestring):
+            if not isinstance(date_max, str):
                date_max = date_max.strftime(DATETIME_FORMAT)
             query_options.insert( t_hi = date_max )
 
@@ -312,7 +313,7 @@ def dl_2_file(dl_url, fh, block_size = 65535, describe = 'None', **options):
                 # it should be an integer
                 size = int(headers["Content-Length"]) 
                 log.info( 'File size: %s (%i B)' % ( utils_unit.convert_bytes(size), size )  )    
-            except Exception, e:
+            except Exception as e:
                 size = -1
                 log.warn( 'File size is not an integer: %s' % headers["Content-Length"] )                      
         else:
@@ -331,12 +332,12 @@ def dl_2_file(dl_url, fh, block_size = 65535, describe = 'None', **options):
            log.info( "- %s (%.1f%%)", utils_unit.convert_bytes(size).rjust(8), percent )
            td = datetime.datetime.now()- start_time;           
         
-	def none_function(sizeRead):
+        def none_function(sizeRead):
            percent = 100
            log.info( "- %s (%.1f%%)", utils_unit.convert_bytes(size).rjust(8), percent )
            td = datetime.datetime.now()- start_time;           
 
-	read = utils_stream.copy(m,temp,progress_function if size != -1 else none_function, block_size )
+        read = utils_stream.copy(m,temp,progress_function if size != -1 else none_function, block_size )
         
         end_time = datetime.datetime.now()
         stopWatch.stop('downloading')
@@ -409,7 +410,6 @@ def execute_request(_options):
 
     * The user agent to use when performing http requests
       - user_agent: 'motu-api-client' 
-
     """
     global log
 
@@ -422,34 +422,33 @@ def execute_request(_options):
         check_options(_options)
 
         # print some trace info about the options set
-        log.log( utils_log.TRACE_LEVEL, '-'*60 )
+        log.log(utils_log.TRACE_LEVEL, '-'*60)
 
         for option in dir(_options):
             if not option.startswith('_'):
-                log.log(utils_log.TRACE_LEVEL, "%s=%s" % (option, getattr( _options, option ) ) )
+                log.log(utils_log.TRACE_LEVEL, "%s=%s" % (option, getattr(_options, option)))
 
-        log.log( utils_log.TRACE_LEVEL, '-'*60 )
+        log.log(utils_log.TRACE_LEVEL, '-'*60)
 
         # start of url to invoke
         url_service = _options.motu
 
         # parameters of the invoked service
-        url_params  = build_params(_options)
+        url_params = build_params(_options)
 
         url_config = get_url_config(_options)
 
         # check if question mark is in the url
-        questionMark = '?'
-        if url_service.endswith(questionMark) :
-            questionMark = ''
+        questionMark = '?' if not url_service.endswith('?') else ''
 
-        url = url_service+questionMark+url_params
-	if _options.describe == True: 
-	    url = url.replace('productdownload','describeProduct')
-	    _options.out_name = _options.out_name.replace('.nc','.xml')
+        url = url_service + questionMark + url_params
+        
+        if _options.describe:
+            url = url.replace('productdownload', 'describeProduct')
+            _options.out_name = _options.out_name.replace('.nc', '.xml')
 
         # set-up the socket timeout if any
-        if _options.socket_timeout != None:
+        if _options.socket_timeout is not None:
             log.debug("Setting timeout %s" % _options.socket_timeout)
             socket.setdefaulttimeout(_options.socket_timeout)
 
@@ -457,23 +456,24 @@ def execute_request(_options):
             stopWatch.start('authentication')
             # perform authentication before acceding service
             download_url = utils_cas.authenticate_CAS_for_URL(url,
-                                                             _options.user,
-                                                             _options.pwd,**url_config)
+                                                            _options.user,
+                                                            _options.pwd,
+                                                            **url_config)
             stopWatch.stop('authentication')
         else:
             # if none, we do nothing more, in basic, we let the url requester doing the job
             download_url = url
 
         # create a file for storing downloaded stream
-        fh = os.path.join(_options.out_dir,_options.out_name)
+        fh = os.path.join(_options.out_dir, _options.out_name)
         try:
             dl_2_file(download_url, fh, _options.block_size, _options.describe, **url_config)
-            log.info( "Done" )
-        except:
+            log.info("Done")
+        except Exception:
             try:
-                if (os.path.isfile(fh)):
+                if os.path.isfile(fh):
                     os.remove(fh)
-            except:
+            except Exception:
                 pass
             raise
     finally:
