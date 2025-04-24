@@ -27,11 +27,12 @@
 #  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
 import urllib
-import urllib2
+# import urllib2
 import traceback
 import platform
 import sys
-import httplib
+# import httplib
+import http.client
 import os
 import re
 import tempfile
@@ -40,7 +41,8 @@ import shutil
 import zipfile
 import logging
 import logging.config
-import ConfigParser
+# import ConfigParser
+from configparser import ConfigParser
 import optparse
 import socket
 
@@ -99,7 +101,7 @@ def load_options():
     parser = optparse.OptionParser(version=get_client_artefact() + ' v' + get_client_version())
     
     # create config parser
-    conf_parser = ConfigParser.SafeConfigParser()
+    conf_parser = ConfigParser()
     conf_parser.read(os.path.expanduser(CFG_FILE))
                      
     # add available options
@@ -269,7 +271,8 @@ if __name__ == '__main__':
             logging.getLogger().setLevel(int(_options.log_level))
                    
         motu_api.execute_request(_options)       
-    except Exception, e:
+    # except Exception, e:
+    except Exception as e:
         log.error( "Execution failed: %s", e )
         if hasattr(e, 'reason'):
           log.info( ' . reason: %s', e.reason )
